@@ -1,6 +1,7 @@
 import streamlit as st 
 import pandas as pd 
 import os 
+import sqlite3
 from datetime import datetime 
  
 # ── 页面配置 ────────────────────────────────────────────── 
@@ -198,37 +199,32 @@ hr { border-color: #bbdefb; }
 </style> 
 """, unsafe_allow_html=True) 
  
-# ── 数据文件路径 ────────────────────────────────────────── 
-DATA_FILE = "canteen_data.csv" 
-COLUMNS = ["dish_name", "stall", "score", "comment", "timestamp"] 
- 
-# ── 数据读写函数 ────────────────────────────────────────── 
-def load_data() -> pd.DataFrame: 
-    if os.path.exists(DATA_FILE): 
-        df = pd.read_csv(DATA_FILE) 
-        # 兼容旧数据缺列 
-        for col in COLUMNS: 
-            if col not in df.columns: 
-                df[col] = "" 
-        return df 
-    return pd.DataFrame(columns=COLUMNS) 
- 
- 
-def save_data(df: pd.DataFrame): 
-    df.to_csv(DATA_FILE, index=False) 
- 
- 
-def add_record(dish_name: str, stall: str, score: int, comment: str): 
-    df = load_data() 
-    new_row = { 
-        "dish_name": dish_name.strip(), 
-        "stall": stall.strip(), 
-        "score": score, 
-        "comment": comment.strip(), 
-        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M"), 
-    } 
-    df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True) 
-    save_data(df) 
+# ── 数据库读写函数 ────────────────────────────────────────── 
+DB_FILE = "canteen_data.db"
+
+def init_db():
+    conn = sqlite3.connect(DB_FILE)
+    c = conn.cursor()
+    c.execute('''CREATE TABLE IF NOT EXISTS reviews
+                 (dish_name TEXT, stall TEXT, score INTEGER, comment TEXT, timestamp TEXT)''')
+    conn.commit()
+    conn.close()
+
+def load_data() -> pd.DataFrame:
+    init_db()
+    conn = sqlite3.connect(DB_FILE)
+    df = pd.read_sql_query("SELECT * FROM reviews", conn)
+    conn.close()
+    return df
+
+def add_record(dish_name: str, stall: str, score: int, comment: str):
+    conn = sqlite3.connect(DB_FILE)
+    c = conn.cursor()
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
+    c.execute("INSERT INTO reviews VALUES (?, ?, ?, ?, ?)",
+              (dish_name.strip(), stall.strip(), score, comment.strip(), timestamp))
+    conn.commit()
+    conn.close()
  
  
 def get_ranking(df: pd.DataFrame) -> pd.DataFrame: 

@@ -12,6 +12,7 @@ ENV/
 
 # Data
 canteen_data.csv
+canteen_data.db
 
 # OS
 .DS_Store
