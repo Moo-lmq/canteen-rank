@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+
+# Streamlit
+.streamlit/config.toml
+! .streamlit/
+
+# Data
+canteen_data.csv
+
+# OS
+.DS_Store
+Thumbs.db
